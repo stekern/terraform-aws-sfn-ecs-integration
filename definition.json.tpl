@@ -17,18 +17,7 @@
           }
         },
         "Overrides": {
-          "ContainerOverrides": [
-            {
-              "Name": "${ECS_CONTAINER_NAME}",
-              "Environment": [
-                {
-                  "Name": "SFN_INPUT",
-                  "Value.$": "States.JsonToString($)"
-                }
-              ],
-              "Command": ["echo \"State machine was triggered with input '$SFN_INPUT'\""]
-            }
-          ]
+          "ContainerOverrides": ${ECS_CONTAINER_OVERRIDES}
         }
       },
       "TimeoutSeconds": 3600,

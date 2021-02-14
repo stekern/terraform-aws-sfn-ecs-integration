@@ -10,11 +10,23 @@ locals {
 
 resource "aws_sfn_state_machine" "this" {
   name = local.name_prefix
-  definition = templatefile("${path.module}/definition.json.tmpl", {
+  definition = templatefile("${path.module}/definition.json.tpl", {
     ECS_CLUSTER_ARN         = aws_ecs_cluster.this.arn
     ECS_TASK_DEFINITION_ARN = aws_ecs_task_definition.this.arn
     ECS_CONTAINER_NAME      = local.ecs_container_name
     SUBNETS                 = jsonencode(var.public_subnet_ids)
+    ECS_CONTAINER_OVERRIDES = jsonencode([
+      merge({
+        Name = local.ecs_container_name
+        Environment = [
+          {
+            Name      = "SFN_INPUT",
+            "Value.$" = "States.JsonToString($)"
+          }
+        ],
+        Command = ["echo \"State machine was triggered with input '$SFN_INPUT'\""]
+      }, var.task_container_override)
+    ])
   })
   role_arn = aws_iam_role.this.arn
   tags     = var.tags
@@ -63,7 +75,7 @@ resource "aws_ecs_task_definition" "this" {
   container_definitions = jsonencode([
     {
       name  = local.ecs_container_name
-      image = "vydev/awscli"
+      image = var.task_container_image
       entryPoint = [
         "/bin/bash",
         "-c"
